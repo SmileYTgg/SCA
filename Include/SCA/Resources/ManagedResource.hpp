@@ -8,6 +8,7 @@
 #include "Utils.hpp"
 
 #include <SCA/Utils/Macro.hpp>
+#include "SCA/Utils/Delegate/IDelegate.hpp"
 #include <string>
 #include <utility>
 
@@ -17,8 +18,10 @@ namespace SCA::Resources {
      * \details Encapsulates OnChanged event + resource name property
      */
     class ManagedResource {
+        typedef IDelegate<void, uint, ManagedResource *> OnChangedSignature;
+
     protected:
-        void(*onChanged_)(int) = nullptr;
+        OnChangedSignature *onChanged_; ///< void(fieldId, self)
         std::string name_;
 
     public:
@@ -27,8 +30,8 @@ namespace SCA::Resources {
         }
 
         // -- Modifiers --
-        virtual inline void emitOnChanged(int fieldID) const noexcept {
-            if (onChanged_) onChanged_(0);
+        virtual inline void emitOnChanged(uint fieldID) noexcept {
+            if (onChanged_) onChanged_->operator()(fieldID, this);
         }
 
         // -- Setters --
@@ -46,8 +49,8 @@ namespace SCA::Resources {
 
     protected:
         // -- Resources management mechanizm --
-        virtual void bindOnChanged(void(*callback)(int)) noexcept setter(onChanged_, callback)
-        virtual bool unbindOnChanged(void(*callback)(int)) noexcept {
+        virtual void bindOnChanged(OnChangedSignature *listener) noexcept setter(onChanged_, listener)
+        virtual bool unbindOnChanged(OnChangedSignature *listener) noexcept {
             onChanged_ = nullptr;
             return true;
         }
